@@ -1,0 +1,58 @@
+---
+- name: install nrpe
+  hosts: nagios-server
+  become: true
+  tasks:  
+
+  - name: download nagios tar file
+    get_url:
+      url: https://sourceforge.net/projects/nagios/files/nrpe-4.x/nrpe-4.0.3/nrpe-4.0.3.tar.gz
+      dest: /home/centos/nagios
+
+  - name: extract nrpe
+    unarchive:
+      src: /home/centos/nagios/nrpe-4.0.3.tar.gz
+      dest: /home/centos/nagios/
+      remote_src: true
+
+  - name: compile nagios-plugin
+    command: "{{ item }}"
+    args:
+      chdir: "/home/centos/nagios/nrpe-4.0.3"
+    with_items:
+      - "./configure --enable-command-args --with-nagios-user=nagios --with-nagios-group=nagios --with-ssl=/usr/bin/openssl --with-ssl-lib=/usr/lib/x86_64-linux-gnu"
+      - make all
+      - make install
+ 
+  - name: copy nrpe file
+    copy: src=nrpe dest=/etc/xinetd.d/nrpe
+
+  - name: Start & Enable xinetd service
+    service: name=xinetd state=started enabled=yes
+
+
+  - name: Uncomment cfg_dir=/usr/local/nagios/etc/servers
+    replace:
+      path: /usr/local/nagios/etc/nagios.cfg
+      regexp: '^#(cfg_dir=/usr/local/nagios/etc/servers)'
+      replace: '\1'
+
+  - name: create directory
+    file:
+      path: /usr/local/nagios/etc/servers
+      state: directory
+
+  - name: Add email-id
+    replace:
+      path: /usr/local/nagios/etc/objects/contacts.cfg
+      regexp: '(nagios@localhost)'
+      replace: 'sahil.narula04@gmail.com'
+ 
+  - name: just force systemd to reread configs
+    systemd: daemon_reload=yes
+
+  - name: Start apache server 
+    service: name=httpd state=restarted
+
+  - name: Start Nagios Server 
+    service: name=nagios state=restarted

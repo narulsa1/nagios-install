@@ -1,0 +1,24 @@
+---
+- name: install nrpe
+  hosts: nagios-client
+  become: true
+  tasks:  
+
+  - name: install epel-repository
+    yum:
+      name: 
+      - epel-release
+      - nrpe
+      - nagios-plugins-all
+      state: present
+ 
+
+  - name: Add nagios server details
+    replace:
+      path: /etc/nagios/nrpe.cfg
+      regexp: '^#(.*allowed_hosts=127.0.0.1.*)'
+      replace: 'allowed_hosts=127.0.0.1, 172.31.37.182'
+
+
+  - name: Start and Enable nrpe service
+    service: name=nrpe state=started enabled=yes

@@ -1,0 +1,26 @@
+---
+- name: install nagios plugin
+  hosts: nagios-server
+  become: true
+  tasks:  
+
+  - name: download nagios tar file
+    get_url:
+      url: http://nagios-plugins.org/download/nagios-plugins-2.3.3.tar.gz
+      dest: /home/centos/nagios
+
+  - name: extract nagios-plugin
+    unarchive:
+      src: /home/centos/nagios/nagios-plugins-2.3.3.tar.gz
+      dest: /home/centos/nagios/
+      remote_src: true
+
+  - name: compile nagios-plugin
+    command: "{{ item }}"
+    args:
+      chdir: "/home/centos/nagios/nagios-plugins-2.3.3"
+    with_items:
+      - "./configure --with-nagios-user=nagios --with-nagios-group=nagios"
+      - make
+      - make install
+

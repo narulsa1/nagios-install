@@ -1,0 +1,136 @@
+---
+- name: install nagios server
+  hosts: nagios-server
+  become: true
+  vars:
+    mysql_root_password: "Password1"
+
+  tasks:
+  - name: install epel-repository
+    yum:
+      name: epel-release
+      state: present
+  - name: install httpd
+    yum:
+      name: 
+        - httpd
+        - mariadb-server
+        - mariadb
+        - MySQL-python
+        - mysql-connector-python
+        - php
+        - php-mysql
+      state: present
+
+  - name: Start & Enable Apache Server to start on boot
+    service: name=httpd state=started enabled=yes
+
+  - name: Enable Mariadb service
+    service: name=mariadb  state=started  enabled=yes
+
+  - name: mysql_root_password
+    mysql_user:
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+      user: root
+      check_implicit_admin: true
+      password: "{{ mysql_root_password }}"
+      host: localhost
+  - name: remove remote root
+    mysql_user:
+      check_implicit_admin: true
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+      user: root
+      host: "{{ ansible_fqdn }}"
+      state: absent
+
+##  install nagios server
+  - name: install pre-requisites
+    yum:
+      name:
+        - gcc
+        - glibc
+        - glibc-common
+        - gd
+        - gd-devel
+        - wget
+        - perl
+        - unzip
+        - perl-devel
+        - make
+        - net-snmp
+        - openssl-devel
+        - xinetd
+      state: present
+
+  - name: Ensure group nagcmd
+    group:
+      name: nagcmd
+      state: present
+    become: yes
+
+  - name: create nagios user
+    user:
+      name: nagios
+      groups: nagcmd
+      shell: /bin/bash
+      home: /home/nagios
+      append: yes
+      state: present
+    become: yes
+
+  - name: create directory
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items: 
+      - /home/centos/nagios
+
+  - name: download nagios tar file
+    get_url:
+      url: https://sourceforge.net/projects/nagios/files/nagios-4.x/nagios-4.4.6/nagios-4.4.6.tar.gz
+      dest: /home/centos/nagios/
+
+  - name: extract nagios.tar.gz
+    unarchive: 
+      src: /home/centos/nagios/nagios-4.4.6.tar.gz
+      dest: /home/centos/nagios/
+      remote_src: true
+
+  - name: run configure
+    command: "./configure --with-nagios-group=nagios --with-command-group=nagcmd"
+    args: 
+      chdir: "/home/centos/nagios/nagios-4.4.6"
+
+  - name: compile nagios
+    command: "{{ item }}"
+    args: 
+      chdir: "/home/centos/nagios/nagios-4.4.6"
+    with_items: 
+      - make all
+      - make install
+      - make install-init
+      - make install-daemoninit
+      - make install-commandmode      
+      - make install-config
+      - make install-webconf
+      - make install-exfoliation
+
+  - name: Add htpasswd nagios user
+    htpasswd: 
+      path: /usr/local/nagios/etc/htpasswd.users
+      name: nagiosadmin
+      password: nagios
+      owner: root
+      group: nagios
+
+  - name: Copy commands.cfg file with check_nrpe command
+    copy: src=commands.cfg dest=/usr/local/nagios/etc/objects/commands.cfg owner=nagios group=nagios mode=755
+
+  - name: Enable and Start nagios service
+    service: name=nagios  state=started enabled=yes
+
+  - name: Retart Apache Server
+    service: name=httpd state=restarted 
+

@@ -1,0 +1,11 @@
+---
+- name: install nagios server
+  hosts: nagios-server
+  become: true
+  tasks:
+  
+  - name: Copy commands.cfg file with check_nrpe command
+    copy: src=client1.cfg dest=/usr/local/nagios/etc/servers/client1.cfg
+
+
+
