@@ -1,6 +1,6 @@
 ---
 - name: install nrpe
-  hosts: nagios-client
+  hosts: local
   become: true
   tasks:  
 
@@ -17,7 +17,7 @@
     replace:
       path: /etc/nagios/nrpe.cfg
       regexp: '^#(.*allowed_hosts=127.0.0.1.*)'
-      replace: 'allowed_hosts=127.0.0.1, 172.31.37.182'
+      replace: 'allowed_hosts=127.0.0.1, 172.31.44.31'
 
 
   - name: Start and Enable nrpe service

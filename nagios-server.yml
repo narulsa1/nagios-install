@@ -62,7 +62,13 @@
         - net-snmp
         - openssl-devel
         - xinetd
+        - python
+        - python-pip
       state: present
+
+  - name: install passlib
+    command: pip install passlib
+
 
   - name: Ensure group nagcmd
     group:
@@ -82,10 +88,8 @@
 
   - name: create directory
     file:
-      path: "{{ item }}"
+      path: /home/centos/nagios  
       state: directory
-    with_items: 
-      - /home/centos/nagios
 
   - name: download nagios tar file
     get_url:

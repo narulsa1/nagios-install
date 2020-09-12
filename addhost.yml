@@ -8,4 +8,6 @@
     copy: src=client1.cfg dest=/usr/local/nagios/etc/servers/client1.cfg
 
 
+  - name: Restart Nagios Server
+    service: name=nagios state=restarted
 
