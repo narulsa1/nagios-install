@@ -1,5 +1,5 @@
 ---
-- name: install nagios server
+- name: add host to nagios server
   hosts: nagios-server
   become: true
   tasks:
